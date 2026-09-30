@@ -9,7 +9,7 @@ CivicConnect is a digital service-request management platform designed to replac
 * npm
 * PostgreSQL
 
-## Setup and Run Instructions
+## Setup and Run Instructions for project
 1. Clone the repository.
 2. Run `npm install` to install dependencies.
 3. Copy `.env.example` to `.env` and configure local database credentials.
