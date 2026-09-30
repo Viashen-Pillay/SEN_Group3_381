@@ -11,77 +11,77 @@ CREATE TYPE request_status AS ENUM (
     'CLOSED'
 );
 
-CREATE TABLE User(
-    userId INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE users (
+    user_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    firstName VARCHAR(100) NOT NULL,
-    lastName VARCHAR(100) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
 
     email VARCHAR(255) NOT NULL UNIQUE,
-    passwordHash VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
 
     role user_role NOT NULL,
-    isActive BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
-    createdAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_user_first_name
-        CHECK (char_length(trim(firstName)) > 0),
+        CHECK (char_length(trim(first_name)) > 0),
 
     CONSTRAINT chk_user_last_name
-        CHECK (char_length(trim(lastName)) > 0),
+        CHECK (char_length(trim(last_name)) > 0),
 
     CONSTRAINT chk_user_email
         CHECK (char_length(trim(email)) > 0)
 );
 
-CREATE TABLE Category (
-    categoryId INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE categories (
+    category_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    categoryName VARCHAR(100) NOT NULL UNIQUE,
+    category_name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
 
-    isActive BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
-    createdAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_category_name
-        CHECK (char_length(trim(categoryName)) > 0)
+        CHECK (char_length(trim(category_name)) > 0)
 );
 
-CREATE TABLE ServiceRequest(
-    requestId INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE service_requests (
+    request_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    requesterId INTEGER NOT NULL,
-    categoryId INTEGER NOT NULL,
-    assignedStaffId INTEGER,
+    requester_id INTEGER NOT NULL,
+    category_id INTEGER NOT NULL,
+    assigned_staff_id INTEGER,
 
     title VARCHAR(200) NOT NULL,
     description TEXT NOT NULL,
 
     status request_status NOT NULL DEFAULT 'NEW',
 
-    resolutionSummary TEXT,
+    resolution_summary TEXT,
 
-    createdAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    resolvedAt TIMESTAMPTZ,
-    closedAt TIMESTAMPTZ,
+    resolved_at TIMESTAMPTZ,
+    closed_at TIMESTAMPTZ,
 
     CONSTRAINT fk_request_requester
-        FOREIGN KEY (requesterId)
-        REFERENCES User(userId)
+        FOREIGN KEY (requester_id)
+        REFERENCES users(user_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_request_category
-        FOREIGN KEY (categoryId)
-        REFERENCES Category(categoryId)
+        FOREIGN KEY (category_id)
+        REFERENCES categories(category_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_request_assigned_staff
-        FOREIGN KEY (assignedStaffId)
-        REFERENCES User(userId)
+        FOREIGN KEY (assigned_staff_id)
+        REFERENCES users(user_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT chk_request_title
@@ -91,104 +91,104 @@ CREATE TABLE ServiceRequest(
         CHECK (char_length(trim(description)) > 0)
 );
 
-CREATE TABLE RequestComment(
-    commentId INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE request_comments (
+    comment_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    requestId INTEGER NOT NULL,
-    authorId INTEGER NOT NULL,
+    request_id INTEGER NOT NULL,
+    author_id INTEGER NOT NULL,
 
     content TEXT NOT NULL,
 
-    createdAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_comment_request
-        FOREIGN KEY (requestId)
-        REFERENCES ServiceRequest(requestId)
+        FOREIGN KEY (request_id)
+        REFERENCES service_requests(request_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_comment_author
-        FOREIGN KEY (authorId)
-        REFERENCES User(userId)
+        FOREIGN KEY (author_id)
+        REFERENCES users(user_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT chk_comment_content
         CHECK (char_length(trim(content)) > 0)
 );
 
-CREATE TABLE StatusHistory(
-    statusHistoryId INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE status_history (
+    status_history_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    requestId INTEGER NOT NULL,
-    previousStatus request_status NOT NULL,
-    newStatus request_status NOT NULL,
+    request_id INTEGER NOT NULL,
+    previous_status request_status NOT NULL,
+    new_status request_status NOT NULL,
 
-    changedBy INTEGER NOT NULL,
-    changedAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    changed_by INTEGER NOT NULL,
+    changed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_status_history_request
-        FOREIGN KEY (requestId)
-        REFERENCES ServiceRequest(requestId)
+        FOREIGN KEY (request_id)
+        REFERENCES service_requests(request_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_status_history_user
-        FOREIGN KEY (changedBy)
-        REFERENCES User(userId)
+        FOREIGN KEY (changed_by)
+        REFERENCES users(user_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT chk_status_changed
-        CHECK (previousStatus <> newStatus)
+        CHECK (previous_status <> new_status)
 );
 
-CREATE TABLE AssignmentHistory(
-    assignmentHistoryId INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE assignment_history (
+    assignment_history_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
-    requestId INTEGER NOT NULL,
+    request_id INTEGER NOT NULL,
 
-    previousStaffId INTEGER,
-    newStaffId INTEGER NOT NULL,
+    previous_staff_id INTEGER,
+    new_staff_id INTEGER NOT NULL,
 
-    changedBy INTEGER NOT NULL,
+    changed_by INTEGER NOT NULL,
 
-    changedAt TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    changed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_assignment_request
-        FOREIGN KEY (requestId)
-        REFERENCES ServiceRequest(requestId)
+        FOREIGN KEY (request_id)
+        REFERENCES service_requests(request_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_assignment_previous_staff
-        FOREIGN KEY (previousStaffId)
-        REFERENCES User(userId)
+        FOREIGN KEY (previous_staff_id)
+        REFERENCES users(user_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_assignment_new_staff
-        FOREIGN KEY (newStaffId)
-        REFERENCES User(userId)
+        FOREIGN KEY (new_staff_id)
+        REFERENCES users(user_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_assignment_changed_by
-        FOREIGN KEY (changedBy)
-        REFERENCES User(userId)
+        FOREIGN KEY (changed_by)
+        REFERENCES users(user_id)
         ON DELETE RESTRICT,
 
     CONSTRAINT chk_assignment_changed
         CHECK (
-            previousStaffId IS NULL
-            OR previousStaffId <> newStaffId
+            previous_staff_id IS NULL
+            OR previous_staff_id <> new_staff_id
         )
 );
 
 CREATE INDEX idx_service_requests_requester
-ON ServiceRequest(requesterId);
+ON service_requests(requester_id);
 
 CREATE INDEX idx_service_requests_category
-ON ServiceRequest(categoryId);
+ON service_requests(category_id);
 
 CREATE INDEX idx_service_requests_status
-ON ServiceRequest(status);
+ON service_requests(status);
 
 CREATE INDEX idx_service_requests_assigned_staff
-ON ServiceRequest(assignedStaffId);
+ON service_requests(assigned_staff_id);
 
 CREATE INDEX idx_service_requests_created_at
-ON ServiceRequest(createdAt);
+ON service_requests(created_at);
