@@ -1,16 +1,18 @@
-class WorkflowStateService{
-    static getValidTransition(currentState){
+class WorkflowStateService {
+    static getValidTransitions(currentState) {
         const transitions = {
             'Pending': ['In Progress', 'Closed'],
-            'In Progress': ['Resloved', 'Closed'],
+            'In Progress': ['Resolved', 'Closed'],
             'Resolved': ['Closed'],
             'Closed': []
         };
-        return transitions[currentState]||[];
+        return transitions[currentState] || [];
     }
-    static isValidTransition(currentState, targetState){
-        const validTransition = this.getValidTransition(currentState);
-        return validTransition.includes(targetState);
+
+    static isValidTransition(currentState, targetState) {
+        const validTransitions = this.getValidTransitions(currentState);
+        return validTransitions.includes(targetState);
     }
 }
+
 module.exports = WorkflowStateService;
