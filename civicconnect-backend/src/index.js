@@ -12,6 +12,10 @@ const requestRoutes = require('./api/requestRoutes');
 
 app.use('/api/v1/requests', requestRoutes);
 
-app.listen(PORT, ()=> {
-    console.log(`CivicConnect backend running on port ${PORT}`)
-})
+if (require.main === module) {
+    app.listen(PORT, ()=> {
+        console.log(`CivicConnect backend running on port ${PORT}`);
+    });
+}
+
+module.exports = app;

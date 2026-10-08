@@ -1,0 +1,28 @@
+name: CivicConnect CI Gate
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./civicconnect-backend
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '24.x'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Run Automated Tests
+      run: npm test
