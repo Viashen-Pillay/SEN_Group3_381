@@ -17,9 +17,9 @@ const serviceToDbState = {
 };
 
 router.post('/', async (req, res) => {
-    const { requesterId, categoryId, title, description } = req.body;
-    if (!categoryId || !description || !title || !requesterId) {
-        return res.status(400).json({ error: "requesterId, categoryId, title, and description are required." });
+    const { requester_id, category_id, title, description } = req.body;
+    if (!category_id || !description || !title || !requester_id) {
+        return res.status(400).json({ error: "requester_id, category_id, title, and description are required." });
     }
     try {
         const query = `
@@ -27,7 +27,7 @@ router.post('/', async (req, res) => {
             VALUES ($1, $2, $3, $4, 'NEW')
             RETURNING request_id, status, title;
         `;
-        const result = await pool.query(query, [requesterId, categoryId, title, description]);
+        const result = await pool.query(query, [requester_id, category_id, title, description]);
         res.status(201).json({ message: "Service request submitted successfully", request: result.rows[0] });
     } catch (err) {
         res.status(500).json({ error: "Database error during request creation." });
@@ -35,13 +35,13 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-    const { status, categoryId } = req.query;
+    const { status, category_id } = req.query;
     try {
         let query = `SELECT * FROM service_requests`;
         const conditions = [], values = [];
 
         if (status) { values.push(status); conditions.push(`status = $${values.length}`); }
-        if (categoryId) { values.push(categoryId); conditions.push(`category_id = $${values.length}`); }
+        if (category_id) { values.push(category_id); conditions.push(`category_id = $${values.length}`); }
         if (conditions.length > 0) query += ` WHERE ` + conditions.join(' AND ');
         
         query += ` ORDER BY created_at DESC;`;
