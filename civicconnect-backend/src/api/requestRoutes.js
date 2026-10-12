@@ -97,7 +97,6 @@ router.patch('/:id/status', async (req, res) => {
         res.status(200).json({ message: "Status updated successfully", status: newStatus });
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error(err);
         res.status(500).json({ error: "Database error during status update." });
     } finally {
         client.release();
@@ -131,10 +130,42 @@ router.post('/:id/assign', async (req, res) => {
         res.status(200).json({ message: "Staff member assigned successfully." });
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error(err);
         res.status(500).json({ error: "Database error during assignment." });
     } finally {
         client.release();
+    }
+});
+
+router.post('/:id/comments', async (req, res) => {
+    const { id } = req.params;
+    const { userId, commentText } = req.body;
+
+    if (!userId || !commentText) {
+        return res.status(400).json({ error: "userId and commentText are required." });
+    }
+
+    try {
+        const query = `
+            INSERT INTO request_comments (request_id, user_id, comment_text)
+            VALUES ($1, $2, $3)
+            RETURNING comment_id, created_at;
+        `;
+        const result = await pool.query(query, [id, userId, commentText]);
+        res.status(201).json({ message: "Comment added successfully", comment: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: "Database error while adding comment." });
+    }
+});
+
+router.get('/:id/comments', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const query = `SELECT * FROM request_comments WHERE request_id = $1 ORDER BY created_at ASC;`;
+        const result = await pool.query(query, [id]);
+        res.status(200).json({ comments: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: "Database error while fetching comments." });
     }
 });
 
