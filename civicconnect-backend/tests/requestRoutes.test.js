@@ -72,4 +72,21 @@ describe('Service Requests API Integration', () => {
         expect(response.status).toBe(404);
         expect(response.body.error).toBe("Service request not found.");
     });
+    it('should assign a staff member successfully', async () => {
+        const response = await request(app)
+            .post('/api/v1/requests/1/assign')
+            .send({ assignedTo: 3, assignedBy: 2 }); 
+        
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe("Staff member assigned successfully.");
+    });
+
+    it('should reject assignment if missing parameters', async () => {
+        const response = await request(app)
+            .post('/api/v1/requests/1/assign')
+            .send({ assignedTo: 3 }); 
+        
+        expect(response.status).toBe(400);
+        expect(response.body.error).toContain("required");
+    });
 });
