@@ -3,6 +3,7 @@ import { CreateRequestForm } from './components/CreateRequestForm';
 import { StaffQueueTable } from './components/StaffQueueTable';
 import MainLayout from './components/layout/MainLayout';
 import RequesterDashboard from './pages/requester/RequesterDashboard';
+import RequestHistory from './pages/requester/RequestHistory';
 import "./styles/layout.css"
 
 function App() {
@@ -11,7 +12,7 @@ function App() {
 
   const [requests, setRequests] = useState([
     {request_id: 101,category_id: 1, title: "Water leak",description: "Water leak in hallway",status: "NEW"},
-    {id: 102,categoryId: 2, title: "Wi-Fi connection issue",description: "Wi-Fi connection down in lab",status: "IN_PROGRESS"}
+    {request_id: 102,category_id: 2, title: "Wi-Fi connection issue",description: "Wi-Fi connection down in lab",status: "IN_PROGRESS"}
   ]);
 
   const handleRoleChange = (newRole) => {
@@ -46,12 +47,7 @@ function App() {
     }
 
     if (activePage === "my-requests" && role === "requester") {
-      return (
-        <div className="page-card">
-          <h2>My Requests</h2>
-          <p>Request history will be implemented in its feature branch.</p>
-        </div>
-      );
+      return (<RequestHistory requests={requests}/>);
     }
 
     if (activePage === "reports" && role === "management") {
