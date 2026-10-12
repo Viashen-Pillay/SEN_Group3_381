@@ -29,9 +29,10 @@ export const StaffQueueTable = ({ requests }) => {
         </select>
         <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} style={{ padding: '8px' }}>
           <option value="ALL">All Statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Resolved">Resolved</option>
+          <option value="NEW">NEW</option>
+          <option value="IN_PROGRESS">IN_PROGRESS</option>
+          <option value="RESOLVED">RESOLVED</option>
+          <option value="CLOSED">CLOSED</option>
         </select>
       </div>
 
@@ -47,9 +48,9 @@ export const StaffQueueTable = ({ requests }) => {
         <tbody>
           {filtered.length > 0 ? (
             filtered.map(req => (
-              <tr key={req.id}>
-                <td>#{req.id}</td>
-                <td>Category {req.categoryId}</td>
+              <tr key={req.request.id}>
+                <td>#{req.request.id}</td>
+                <td>Category {req.category_id}</td>
                 <td>{req.description}</td>
                 <td>{req.status}</td>
               </tr>

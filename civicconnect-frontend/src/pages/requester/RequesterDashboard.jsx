@@ -3,13 +3,15 @@ import "./../../styles/requesterDashboard.css";
 export default function RequesterDashboard({requests, onNavigate}){
     const total = requests.length;
 
-    const pending = requests.filter((request) => request.status === "Pending").length;
+    const pending = requests.filter((request) => request.status === "NEW").length;
 
-    const inProgress = requests.filter((request) => requests.status === "In Progress").length;
+    const inProgress = requests.filter((request) => request.status === "IN_PROGRESS").length;
 
-    const resolved = requests.filter((request) => request.status === "Resilved").length;
+    const resolved = requests.filter((request) => request.status === "RESOLVED").length;
 
-    const recentRequests = [...requests].sort((a,b) => b.id - a.id).slice(0,5);
+    const closed = requests.filter((request) => request.status === "CLOSED").length;
+
+    const recentRequests = [...requests].sort((a,b) => b.request_id - a.request_id).slice(0,5);
 
     return(
         <div className = "requester-dashboard">
@@ -29,7 +31,7 @@ export default function RequesterDashboard({requests, onNavigate}){
                 </div>
 
                 <div className = "stat-card">
-                    <p>Pending:</p>
+                    <p>New:</p>
                     <h3>{pending}</h3>
                 </div>
 
@@ -41,6 +43,11 @@ export default function RequesterDashboard({requests, onNavigate}){
                 <div className = "stat-card">
                     <p>Resolved:</p>
                     <h3>{resolved}</h3>
+                </div>
+
+                <div className = "stat-card">
+                    <p>Closed:</p>
+                    <h3>{closed}</h3>
                 </div>
             </div>
 
@@ -54,9 +61,9 @@ export default function RequesterDashboard({requests, onNavigate}){
                 {recentRequests.length === 0 ? (<p>You do not have any requests yet.</p>) : 
                                                 (<div className = "request-list">
                                                     {recentRequests.map((request) => (
-                                                        <div className = "request-row" key={request.id}>
+                                                        <div className = "request-row" key={request.request_id}>
                                                             <div>
-                                                                <strong>#{request.id}</strong>
+                                                                <strong>#{request.request_id}</strong>
                                                                 <p>{request.description}</p>
                                                             </div>
 

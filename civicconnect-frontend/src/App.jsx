@@ -10,8 +10,8 @@ function App() {
   const [activePage, setActivePage] = useState("dashboard");
 
   const [requests, setRequests] = useState([
-    {id: 101,categoryId: "1",description: "Water leak in hallway",status: "Pending"},
-    {id: 102,categoryId: "2",description: "Wi-Fi connection down in lab",status: "In Progress"}
+    {request_id: 101,category_id: 1, title: "Water leak",description: "Water leak in hallway",status: "NEW"},
+    {id: 102,categoryId: 2, title: "Wi-Fi connection issue",description: "Wi-Fi connection down in lab",status: "IN_PROGRESS"}
   ]);
 
   const handleRoleChange = (newRole) => {
