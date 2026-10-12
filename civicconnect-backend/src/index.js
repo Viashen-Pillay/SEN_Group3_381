@@ -9,8 +9,10 @@ app.use(cors());
 app.use(express.json());
 
 const requestRoutes = require('./api/requestRoutes');
+const userRoutes = require('./api/userRoutes');
 
 app.use('/api/v1/requests', requestRoutes);
+app.use('/api/v1/users', userRoutes);
 
 if (require.main === module) {
     app.listen(PORT, ()=> {
