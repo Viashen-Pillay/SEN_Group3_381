@@ -5,10 +5,10 @@ export async function createRequest(request, requester_id) {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
-      requesterId: requester_id,
-      categoryId: request.category_id,
-      title: request.title,
-      description: request.description
+      requester_id,
+    category_id: request.category_id,
+    title: request.title,
+    description: request.description
     })
   });
 

@@ -38,12 +38,12 @@ jest.mock('../src/services/WorkflowStateService', () => ({
 
 describe('Service Requests API Integration', () => {
     it('should reject a request with missing fields (Negative Test)', async () => {
-        const response = await request(app).post('/api/v1/requests').send({ categoryId: 1 });
+        const response = await request(app).post('/api/v1/requests').send({ category_id: 1 });
         expect(response.status).toBe(400);
     });
 
     it('should accept a valid service request (Positive Test)', async () => {
-        const response = await request(app).post('/api/v1/requests').send({ requesterId: 1, categoryId: 1, title: "Pothole", description: "Main St" });
+        const response = await request(app).post('/api/v1/requests').send({ requester_id: 1, category_id: 1, title: "Pothole", description: "Main St" });
         expect(response.status).toBe(201);
     });
 
