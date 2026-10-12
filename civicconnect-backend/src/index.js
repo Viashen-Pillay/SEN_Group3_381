@@ -10,9 +10,11 @@ app.use(express.json());
 
 const requestRoutes = require('./api/requestRoutes');
 const userRoutes = require('./api/userRoutes');
+const categoryRoutes = require('./api/categoryRoutes');
 
 app.use('/api/v1/requests', requestRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/categories', categoryRoutes);
 
 if (require.main === module) {
     app.listen(PORT, ()=> {
