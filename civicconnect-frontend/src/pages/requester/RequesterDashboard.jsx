@@ -1,0 +1,72 @@
+import "./../../styles/requesterDashboard.css";
+
+export default function RequesterDashboard({requests, onNavigate}){
+    const total = requests.length;
+
+    const pending = requests.filter((request) => request.status === "Pending").length;
+
+    const inProgress = requests.filter((request) => requests.status === "In Progress").length;
+
+    const resolved = requests.filter((request) => request.status === "Resilved").length;
+
+    const recentRequests = [...requests].sort((a,b) => b.id - a.id).slice(0,5);
+
+    return(
+        <div className = "requester-dashboard">
+            <div className = "dashboard-heading">
+                <div>
+                    <h2>Requester Dashboard</h2>
+                    <p>View and manage your service requests.</p>
+                </div>
+
+                <button onClick={()=> onNavigate("new-request")} className = "primary-button">New Request</button>
+            </div>
+
+            <div className = "dashboard-stats">
+                <div className = "stat-card">
+                    <p>Total Requests:</p>
+                    <h3>{total}</h3>
+                </div>
+
+                <div className = "stat-card">
+                    <p>Pending:</p>
+                    <h3>{pending}</h3>
+                </div>
+
+                <div className = "stat-card">
+                    <p>In Progress:</p>
+                    <h3>{inProgress}</h3>
+                </div>
+
+                <div className = "stat-card">
+                    <p>Resolved:</p>
+                    <h3>{resolved}</h3>
+                </div>
+            </div>
+
+            <div className="recent-requests">
+                <div className="section-heading">
+                    <h3>Recent Requests</h3>
+
+                    <button onClick={() => onNavigate("my-requests")} className="text-button">View All</button>
+                </div>
+
+                {recentRequests.length === 0 ? (<p>You do not have any requests yet.</p>) : 
+                                                (<div className = "request-list">
+                                                    {recentRequests.map((request) => (
+                                                        <div className = "request-row" key={request.id}>
+                                                            <div>
+                                                                <strong>#{request.id}</strong>
+                                                                <p>{request.description}</p>
+                                                            </div>
+
+                                                            <span className="request-status">
+                                                                {request.status}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>)}
+            </div>
+        </div>
+    );
+}

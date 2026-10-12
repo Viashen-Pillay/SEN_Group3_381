@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CreateRequestForm } from './components/CreateRequestForm';
 import { StaffQueueTable } from './components/StaffQueueTable';
 import MainLayout from './components/layout/MainLayout';
+import RequesterDashboard from './pages/requester/RequesterDashboard';
 import "./styles/layout.css"
 
 function App() {
@@ -23,6 +24,12 @@ function App() {
   };
 
   const renderPage = () => {
+
+    if(activePage === "dashboard" && role === "requester"){
+      return(
+        <RequesterDashboard requests={requests} onNavigate={setActivePage}/>
+      );
+    }
     if (activePage === "new-request" && role === "requester") {
       return (
         <CreateRequestForm
