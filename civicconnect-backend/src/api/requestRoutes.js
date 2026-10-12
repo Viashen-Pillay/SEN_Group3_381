@@ -104,4 +104,38 @@ router.patch('/:id/status', async (req, res) => {
     }
 });
 
+router.post('/:id/assign', async (req, res) => {
+    const { id } = req.params;
+    const { assignedTo, assignedBy } = req.body;
+
+    if (!assignedTo || !assignedBy) {
+        return res.status(400).json({ error: "assignedTo and assignedBy user IDs are required." });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const requestCheck = await client.query(`SELECT status FROM service_requests WHERE request_id = $1`, [id]);
+        if (requestCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "Service request not found." });
+        }
+
+        await client.query(
+            `INSERT INTO assignment_history (request_id, assigned_to, assigned_by) VALUES ($1, $2, $3)`,
+            [id, assignedTo, assignedBy]
+        );
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: "Staff member assigned successfully." });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ error: "Database error during assignment." });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;
