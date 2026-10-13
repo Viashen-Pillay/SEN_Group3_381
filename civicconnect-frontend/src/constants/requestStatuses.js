@@ -1,0 +1,13 @@
+export const REQUEST_STATUSES = [
+  "NEW",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CLOSED"
+];
+
+export const ALLOWED_TRANSITIONS = {
+  NEW: ["IN_PROGRESS", "CLOSED"],
+  IN_PROGRESS: ["RESOLVED", "CLOSED"],
+  RESOLVED: ["CLOSED"],
+  CLOSED: []
+};

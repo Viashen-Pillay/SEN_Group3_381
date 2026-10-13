@@ -25,6 +25,11 @@ function App() {
     setRequests((prev) => [...prev, newRequest]);
   };
 
+  const handleStatusChange = (requestId, newStatus) => {
+    setRequests((previous) => previous.map((request) => request.request_id === requestId ?
+     {...request, status: newStatus} : request));
+  };
+
   const renderPage = () => {
 
     if(activePage === "dashboard" && role ==="staff"){
@@ -45,11 +50,8 @@ function App() {
       );
     }
 
-    if (
-      activePage === "staff-queue" &&
-      role === "staff"
-    ) {
-      return <StaffQueueTable requests={requests} />;
+    if (activePage === "staff-queue" &&role === "staff") {
+      return <StaffQueueTable requests={requests} onStatusChange={handleStatusChange} />;
     }
 
     if (activePage === "my-requests" && role === "requester") {
