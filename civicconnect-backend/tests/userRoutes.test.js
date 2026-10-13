@@ -1,5 +1,8 @@
 const request = require('supertest');
 const app = require('../src/index');
+const bcrypt = require('bcryptjs');
+
+const mockValidPasswordHash = bcrypt.hashSync('password123', 10);
 
 jest.mock('../src/config/database', () => ({
     query: jest.fn((query, values) => {
@@ -15,7 +18,15 @@ jest.mock('../src/config/database', () => ({
         }
       
         if (query.includes('SELECT * FROM users') && values[0] === 'valid@test.com') {
-            return Promise.resolve({ rows: [{ user_id: 1, email: 'valid@test.com', password_hash: 'password123', role: 'Requester' }] });
+            return Promise.resolve({ 
+                rows: [{ 
+                    user_id: 1, 
+                    name: 'Valid User',
+                    email: 'valid@test.com', 
+                    password_hash: mockValidPasswordHash, 
+                    role: 'Requester' 
+                }] 
+            });
         }
         
         if (query.includes('SELECT * FROM users')) {
