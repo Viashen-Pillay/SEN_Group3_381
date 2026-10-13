@@ -48,8 +48,8 @@ export const StaffQueueTable = ({ requests }) => {
         <tbody>
           {filtered.length > 0 ? (
             filtered.map(req => (
-              <tr key={req.request.id}>
-                <td>#{req.request.id}</td>
+              <tr key={req.request_id}>
+                <td>#{req.request_id}</td>
                 <td>Category {req.category_id}</td>
                 <td>{req.description}</td>
                 <td>{req.status}</td>
