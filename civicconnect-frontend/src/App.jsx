@@ -5,6 +5,7 @@ import MainLayout from './components/layout/MainLayout';
 import RequesterDashboard from './pages/requester/RequesterDashboard';
 import RequestHistory from './pages/requester/RequestHistory';
 import StaffDashboard from './pages/staff/staffDashboard';
+import ManagementDashboard from './pages/management/ManagementDashboard';
 import "./styles/layout.css"
 
 function App() {
@@ -32,10 +33,16 @@ function App() {
 
   const renderPage = () => {
 
+    if(activePage === "dashboard" && role === "management"){
+      return(
+        <ManagementDashboard requests={requests} onNavigate={setActivePage}/>
+      );
+    }
+
     if(activePage === "dashboard" && role ==="staff"){
       return(
         <StaffDashboard requests={requests} onNavigate={setActivePage}/>
-      )
+      );
     }
     if(activePage === "dashboard" && role === "requester"){
       return(
