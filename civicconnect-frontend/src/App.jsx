@@ -6,6 +6,7 @@ import RequesterDashboard from './pages/requester/RequesterDashboard';
 import RequestHistory from './pages/requester/RequestHistory';
 import StaffDashboard from './pages/staff/staffDashboard';
 import ManagementDashboard from './pages/management/ManagementDashboard';
+import ManagementReports from './pages/management/ManagementReports';
 import "./styles/layout.css"
 
 function App() {
@@ -67,10 +68,7 @@ function App() {
 
     if (activePage === "reports" && role === "management") {
       return (
-        <div className="page-card">
-          <h2>Reports</h2>
-          <p>Management reporting will be implemented later.</p>
-        </div>
+        <ManagementReports requests={requests}/>
       );
     }
 
