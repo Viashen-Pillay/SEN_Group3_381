@@ -7,7 +7,8 @@ const mockValidPasswordHash = bcrypt.hashSync('password123', 10);
 jest.mock('../src/config/database', () => ({
     query: jest.fn((query, values) => {
         
-        if (query.includes('INSERT INTO users') && values[1] === 'duplicate@test.com') {
+        // Use values.includes() so it catches the duplicate email no matter what column order your SQL uses
+        if (query.includes('INSERT INTO users') && values && values.includes('duplicate@test.com')) {
             const error = new Error();
             error.code = '23505';
             return Promise.reject(error);
@@ -17,7 +18,7 @@ jest.mock('../src/config/database', () => ({
             return Promise.resolve({ rows: [{ user_id: 1, name: values[0], email: values[1], role: values[3] }] });
         }
       
-        if (query.includes('SELECT * FROM users') && values[0] === 'valid@test.com') {
+        if (query.includes('SELECT * FROM users') && values && values.includes('valid@test.com')) {
             return Promise.resolve({ 
                 rows: [{ 
                     user_id: 1, 
