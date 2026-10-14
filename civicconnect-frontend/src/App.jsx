@@ -9,12 +9,16 @@ import ManagementDashboard from "./pages/management/ManagementDashboard";
 import ManagementReports from "./pages/management/ManagementReports";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import { registerUser } from "./services/authService";
+
+import { registerUser, loginUser } from "./services/authService"; 
 import "./styles/layout.css";
 
 function App() {
   const [role, setRole] = useState("requester");
   const [activePage, setActivePage] = useState("dashboard");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authPage, setAuthPage] = useState("login");
+  const [registrationMessage, setRegistrationMessage] = useState("");
 
   const [requests, setRequests] = useState([
     {
@@ -52,34 +56,24 @@ function App() {
     );
   };
 
-  const [currentUser, setCurrentUser] = useState(null);
-
-  const handleLogin = async ({ email }) => {
-    // Development-only mock login.
-    // Replace with loginUser() after backend sessions are implemented.
-    setCurrentUser({
-      user_id: "demo-user",
-      name: email,
-      role: "Requester",
-    });
-
-    setRole("requester");
+  const handleLogin = async (credentials) => {
+    const user = await loginUser(credentials);
+    
+    setCurrentUser(user);
+    
+    setRole(user.role.toLowerCase());
     setActivePage("dashboard");
+  };
+
+  const handleRegister = async (userData) => {
+    await registerUser(userData);
+    setRegistrationMessage("Account created successfully. Please sign in.");
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setRole("requester");
     setActivePage("dashboard");
-  };
-
-  const [authPage, setAuthPage] = useState("login");
-  const [registrationMessage, setRegistrationMessage] = useState("");
-
-  const handleRegister = async (userData) => {
-    await registerUser(userData);
-
-    setRegistrationMessage("Account created successfully. Please sign in.");
   };
 
   const renderPage = () => {
@@ -140,7 +134,7 @@ function App() {
     return (
       <>
         {registrationMessage && (
-          <p role="status" className="auth-success">
+          <p role="status" className="auth-success" style={{ textAlign: 'center', color: 'green', marginTop: '10px' }}>
             {registrationMessage}
           </p>
         )}
@@ -155,16 +149,15 @@ function App() {
       </>
     );
   }
+
   return (
     <MainLayout role={role} activePage={activePage} onNavigate={setActivePage}>
-      <div className="role-switcher">
+      {/* Optional: Add a logout button to your layout or role switcher */}
+      <div className="role-switcher" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
         <button onClick={() => handleRoleChange("requester")}>Requester</button>
-
         <button onClick={() => handleRoleChange("staff")}>Staff</button>
-
-        <button onClick={() => handleRoleChange("management")}>
-          Management
-        </button>
+        <button onClick={() => handleRoleChange("management")}>Management</button>
+        <button onClick={handleLogout} style={{ marginLeft: 'auto', background: '#d9534f', color: 'white' }}>Log Out</button>
       </div>
 
       {renderPage()}
