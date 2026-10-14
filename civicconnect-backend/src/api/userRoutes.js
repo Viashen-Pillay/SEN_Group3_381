@@ -10,20 +10,23 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ error: "Name, email, and password are required." });
     }
 
-    const userRole = role || 'Requester';
+    const nameParts = name.trim().split(' ');
+    const first_name = nameParts[0];
+    const last_name = nameParts.slice(1).join(' ') || 'User';
+
+    const userRole = role ? role.toUpperCase() : 'REQUESTER';
 
     try {
-        
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         const query = `
-            INSERT INTO users (name, email, password_hash, role)
-            VALUES ($1, $2, $3, $4)
-            RETURNING user_id, name, email, role;
+            INSERT INTO users (first_name, last_name, email, password_hash, role)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING user_id, first_name, last_name, email, role;
         `;
         
-        const result = await pool.query(query, [name, email, hashedPassword, userRole]);
+        const result = await pool.query(query, [first_name, last_name, email, hashedPassword, userRole]);
 
         res.status(201).json({
             message: "User registered successfully",
@@ -33,6 +36,7 @@ router.post('/register', async (req, res) => {
         if (err.code === '23505') {
             return res.status(409).json({ error: "Email already exists." });
         }
+        console.error("Postgres Error:", err.message);
         res.status(500).json({ error: "Database error during registration." });
     }
 });
