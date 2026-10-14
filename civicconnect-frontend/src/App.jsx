@@ -37,11 +37,6 @@ function App() {
     },
   ]);
 
-  const handleRoleChange = (newRole) => {
-    setRole(newRole);
-    setActivePage("dashboard");
-  };
-
   const handleRequestCreated = (newRequest) => {
     setRequests((prev) => [...prev, newRequest]);
   };
@@ -151,15 +146,7 @@ function App() {
   }
 
   return (
-    <MainLayout role={role} activePage={activePage} onNavigate={setActivePage}>
-      {/* Optional: Add a logout button to your layout or role switcher */}
-      <div className="role-switcher" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <button onClick={() => handleRoleChange("requester")}>Requester</button>
-        <button onClick={() => handleRoleChange("staff")}>Staff</button>
-        <button onClick={() => handleRoleChange("management")}>Management</button>
-        <button onClick={handleLogout} style={{ marginLeft: 'auto', background: '#d9534f', color: 'white' }}>Log Out</button>
-      </div>
-
+    <MainLayout role={role} user={currentUser} activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout}>
       {renderPage()}
     </MainLayout>
   );
