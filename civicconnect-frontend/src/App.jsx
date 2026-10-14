@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CreateRequestForm } from "./components/CreateRequestForm";
 import { StaffQueueTable } from "./components/StaffQueueTable";
 import MainLayout from "./components/layout/MainLayout";
@@ -9,8 +9,9 @@ import ManagementDashboard from "./pages/management/ManagementDashboard";
 import ManagementReports from "./pages/management/ManagementReports";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import { getRequests } from "./services/requestService";
 
-import { registerUser, loginUser } from "./services/authService"; 
+import { registerUser, loginUser } from "./services/authService";
 import "./styles/layout.css";
 
 function App() {
@@ -20,22 +21,35 @@ function App() {
   const [authPage, setAuthPage] = useState("login");
   const [registrationMessage, setRegistrationMessage] = useState("");
 
-  const [requests, setRequests] = useState([
-    {
-      request_id: 101,
-      category_id: 1,
-      title: "Water leak",
-      description: "Water leak in hallway",
-      status: "NEW",
-    },
-    {
-      request_id: 102,
-      category_id: 2,
-      title: "Wi-Fi connection issue",
-      description: "Wi-Fi connection down in lab",
-      status: "IN_PROGRESS",
-    },
-  ]);
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState("");
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let active = true;
+
+    async function loadRequests() {
+      setRequestsLoading(true);
+      setRequestsError("");
+
+      try {
+        const data = await getRequests();
+        if (active) setRequests(data);
+      } catch (err) {
+        if (active) setRequestsError(err.message);
+      } finally {
+        if (active) setRequestsLoading(false);
+      }
+    }
+
+    loadRequests();
+
+    return () => {
+      active = false;
+    };
+  }, [currentUser]);
 
   const handleRequestCreated = (newRequest) => {
     setRequests((prev) => [...prev, newRequest]);
@@ -53,9 +67,9 @@ function App() {
 
   const handleLogin = async (credentials) => {
     const user = await loginUser(credentials);
-    
+
     setCurrentUser(user);
-    
+
     setRole(user.role.toLowerCase());
     setActivePage("dashboard");
   };
@@ -91,10 +105,19 @@ function App() {
     }
 
     if (activePage === "staff-queue" && role === "staff") {
+      if (requestsLoading) {
+        return <p>Loading service requests...</p>;
+      }
+
+      if (requestsError) {
+        return <p role="alert">{requestsError}</p>;
+      }
+
       return (
         <StaffQueueTable
           requests={requests}
           onStatusChange={handleStatusChange}
+          currentUser={currentUser}
         />
       );
     }
@@ -129,7 +152,11 @@ function App() {
     return (
       <>
         {registrationMessage && (
-          <p role="status" className="auth-success" style={{ textAlign: 'center', color: 'green', marginTop: '10px' }}>
+          <p
+            role="status"
+            className="auth-success"
+            style={{ textAlign: "center", color: "green", marginTop: "10px" }}
+          >
             {registrationMessage}
           </p>
         )}
@@ -146,7 +173,13 @@ function App() {
   }
 
   return (
-    <MainLayout role={role} user={currentUser} activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout}>
+    <MainLayout
+      role={role}
+      user={currentUser}
+      activePage={activePage}
+      onNavigate={setActivePage}
+      onLogout={handleLogout}
+    >
       {renderPage()}
     </MainLayout>
   );

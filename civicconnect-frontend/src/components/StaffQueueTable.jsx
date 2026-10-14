@@ -1,9 +1,11 @@
 import { useState } from "react";
 import {CategoryFilterStrategy,StatusFilterStrategy,KeywordSearchStrategy} from "../strategies/filterStrategies";
 import {REQUEST_STATUSES,ALLOWED_TRANSITIONS} from "../constants/requestStatuses";
+import StaffAssignment from "./StaffAssignment";
+import StaffComments from "./StaffComments";
 import "../styles/staffQueue.css";
 
-export function StaffQueueTable({requests = [],onStatusChange}) {
+export function StaffQueueTable({requests = [],onStatusChange, currentUser}) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -137,6 +139,11 @@ export function StaffQueueTable({requests = [],onStatusChange}) {
           <p><strong>Description:</strong></p>
           <p>{selectedRequest.description}</p>
 
+          <StaffAssignment key={'assignment-${selectedRequest.request_id}'} 
+          requestId={selectedRequest.request_id} currentUser={currentUser}/>
+
+          <StaffComments key={'comments-${selectedRequest.request_id}'}
+           requestId={selectedRequest.request_id} currentUser={currentUser}/>
           <div className="staff-status-editor">
             <label htmlFor="new-status">Update Status</label>
 

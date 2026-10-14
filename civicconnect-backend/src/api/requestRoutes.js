@@ -104,68 +104,299 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 router.post('/:id/assign', async (req, res) => {
-    const { id } = req.params;
-    const { assignedTo, assignedBy } = req.body;
+    const requestId = Number(req.params.id);
+    const assignedTo = Number(req.body.assignedTo);
+    const assignedBy = Number(req.body.assignedBy);
 
-    if (!assignedTo || !assignedBy) {
-        return res.status(400).json({ error: "assignedTo and assignedBy user IDs are required." });
+    if (
+        !Number.isSafeInteger(requestId) || requestId <= 0 ||
+        !Number.isSafeInteger(assignedTo) || assignedTo <= 0 ||
+        !Number.isSafeInteger(assignedBy) || assignedBy <= 0
+    ) {
+        return res.status(400).json({
+            error: "Valid request, assignee and assigning user IDs are required."
+        });
     }
 
-    const client = await pool.connect();
+    let client;
+
     try {
+        client = await pool.connect();
         await client.query('BEGIN');
 
-        const requestCheck = await client.query(`SELECT status FROM service_requests WHERE request_id = $1`, [id]);
-        if (requestCheck.rows.length === 0) {
+        const requestResult = await client.query(`
+            SELECT assigned_staff_id, status
+            FROM service_requests
+            WHERE request_id = $1
+            FOR UPDATE
+        `, [requestId]);
+
+        if (requestResult.rows.length === 0) {
             await client.query('ROLLBACK');
-            return res.status(404).json({ error: "Service request not found." });
+            return res.status(404).json({
+                error: "Service request not found."
+            });
         }
 
-        await client.query(
-            `INSERT INTO assignment_history (request_id, assigned_to, assigned_by) VALUES ($1, $2, $3)`,
-            [id, assignedTo, assignedBy]
+        const request = requestResult.rows[0];
+
+        if (request.status === 'CLOSED') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                error: "Closed requests cannot be reassigned."
+            });
+        }
+
+        const usersResult = await client.query(`
+            SELECT user_id, role, is_active
+            FROM users
+            WHERE user_id = ANY($1::integer[])
+        `, [[assignedTo, assignedBy]]);
+
+        const validStaffIds = new Set(
+            usersResult.rows
+                .filter(user =>
+                    user.role === 'STAFF' && user.is_active
+                )
+                .map(user => user.user_id)
         );
 
+        if (
+            !validStaffIds.has(assignedTo) ||
+            !validStaffIds.has(assignedBy)
+        ) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                error: "Both users must be active staff members."
+            });
+        }
+
+        const previousStaffId = request.assigned_staff_id;
+
+        if (previousStaffId === assignedTo) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                error: "This staff member is already assigned."
+            });
+        }
+
+        await client.query(`
+            UPDATE service_requests
+            SET assigned_staff_id = $1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE request_id = $2
+        `, [assignedTo, requestId]);
+
+        const historyResult = await client.query(`
+            INSERT INTO assignment_history (
+                request_id,
+                previous_staff_id,
+                new_staff_id,
+                changed_by
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        `, [
+            requestId,
+            previousStaffId,
+            assignedTo,
+            assignedBy
+        ]);
+
         await client.query('COMMIT');
-        res.status(200).json({ message: "Staff member assigned successfully." });
+
+        res.status(200).json({
+            message: "Staff member assigned successfully.",
+            assigned_staff_id: assignedTo,
+            assignment: historyResult.rows[0]
+        });
+
     } catch (err) {
-        await client.query('ROLLBACK');
-        res.status(500).json({ error: "Database error during assignment." });
+        if (client) await client.query('ROLLBACK');
+
+        console.error("Assignment error:", err);
+
+        res.status(500).json({
+            error: "Database error during assignment."
+        });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 });
 
 router.post('/:id/comments', async (req, res) => {
-    const { id } = req.params;
-    const { userId, commentText } = req.body;
+    const requestId = Number(req.params.id);
+    const authorId = Number(req.body.userId);
+    const content = req.body.commentText;
 
-    if (!userId || !commentText) {
-        return res.status(400).json({ error: "userId and commentText are required." });
+    if (
+        !Number.isSafeInteger(requestId) || requestId <= 0 ||
+        !Number.isSafeInteger(authorId) || authorId <= 0 ||
+        typeof content !== 'string' ||
+        !content.trim()
+    ) {
+        return res.status(400).json({
+            error: "Valid request ID, author ID and comment are required."
+        });
     }
 
     try {
-        const query = `
-            INSERT INTO request_comments (request_id, user_id, comment_text)
+        const authorResult = await pool.query(`
+            SELECT user_id
+            FROM users
+            WHERE user_id = $1
+              AND role = 'STAFF'
+              AND is_active = TRUE
+        `, [authorId]);
+
+        if (authorResult.rows.length === 0) {
+            return res.status(403).json({
+                error: "Only active staff members can add comments."
+            });
+        }
+
+        const requestResult = await pool.query(`
+            SELECT request_id
+            FROM service_requests
+            WHERE request_id = $1
+        `, [requestId]);
+
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({
+                error: "Service request not found."
+            });
+        }
+
+        const result = await pool.query(`
+            INSERT INTO request_comments (
+                request_id,
+                author_id,
+                content
+            )
             VALUES ($1, $2, $3)
-            RETURNING comment_id, created_at;
-        `;
-        const result = await pool.query(query, [id, userId, commentText]);
-        res.status(201).json({ message: "Comment added successfully", comment: result.rows[0] });
+            RETURNING
+                comment_id,
+                request_id,
+                author_id,
+                content,
+                created_at
+        `, [requestId, authorId, content.trim()]);
+
+        res.status(201).json({
+            message: "Comment added successfully.",
+            comment: result.rows[0]
+        });
+
     } catch (err) {
-        res.status(500).json({ error: "Database error while adding comment." });
+        console.error("Comment creation error:", err);
+
+        res.status(500).json({
+            error: "Unable to add comment."
+        });
     }
 });
 
 router.get('/:id/comments', async (req, res) => {
-    const { id } = req.params;
+    const requestId = Number(req.params.id);
+
+    if (!Number.isSafeInteger(requestId) || requestId <= 0) {
+        return res.status(400).json({
+            error: "Invalid request ID."
+        });
+    }
 
     try {
-        const query = `SELECT * FROM request_comments WHERE request_id = $1 ORDER BY created_at ASC;`;
-        const result = await pool.query(query, [id]);
-        res.status(200).json({ comments: result.rows });
+        const result = await pool.query(`
+            SELECT
+                rc.comment_id,
+                rc.request_id,
+                rc.author_id,
+                rc.content,
+                rc.created_at,
+                u.first_name,
+                u.last_name
+
+            FROM request_comments rc
+
+            JOIN users u
+                ON rc.author_id = u.user_id
+
+            WHERE rc.request_id = $1
+
+            ORDER BY
+                rc.created_at ASC,
+                rc.comment_id ASC
+        `, [requestId]);
+
+        res.status(200).json({
+            comments: result.rows
+        });
+
     } catch (err) {
-        res.status(500).json({ error: "Database error while fetching comments." });
+        console.error("Comment retrieval error:", err);
+
+        res.status(500).json({
+            error: "Unable to fetch comments."
+        });
+    }
+});
+
+router.get('/:id/assignments', async (req, res) => {
+    const requestId = Number(req.params.id);
+
+    if (!Number.isSafeInteger(requestId) || requestId <= 0) {
+        return res.status(400).json({
+            error: "Invalid request ID."
+        });
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT
+                ah.assignment_history_id,
+                ah.request_id,
+                ah.previous_staff_id,
+                ah.new_staff_id,
+                ah.changed_by,
+                ah.changed_at,
+
+                previous_user.first_name AS previous_first_name,
+                previous_user.last_name AS previous_last_name,
+
+                new_user.first_name AS new_first_name,
+                new_user.last_name AS new_last_name,
+
+                changing_user.first_name AS changed_by_first_name,
+                changing_user.last_name AS changed_by_last_name
+
+            FROM assignment_history ah
+
+            LEFT JOIN users previous_user
+                ON ah.previous_staff_id = previous_user.user_id
+
+            JOIN users new_user
+                ON ah.new_staff_id = new_user.user_id
+
+            JOIN users changing_user
+                ON ah.changed_by = changing_user.user_id
+
+            WHERE ah.request_id = $1
+
+            ORDER BY
+                ah.changed_at DESC,
+                ah.assignment_history_id DESC
+        `, [requestId]);
+
+        res.status(200).json({
+            assignments: result.rows
+        });
+
+    } catch (err) {
+        console.error("Assignment history error:", err);
+
+        res.status(500).json({
+            error: "Unable to fetch assignment history."
+        });
     }
 });
 
