@@ -17,7 +17,7 @@ export default function RequesterDashboard({requests, onNavigate}){
         <div className = "requester-dashboard">
             <div className = "dashboard-heading">
                 <div>
-                    <h2>Requester Dashboard</h2>
+                    <h2>Dashboard</h2>
                     <p>View and manage your service requests.</p>
                 </div>
 
@@ -63,7 +63,7 @@ export default function RequesterDashboard({requests, onNavigate}){
                                                     {recentRequests.map((request) => (
                                                         <div className = "request-row" key={request.request_id}>
                                                             <div>
-                                                                <strong>#{request.request_id}</strong>
+                                                                <strong>{request.title}</strong>
                                                                 <p>{request.description}</p>
                                                             </div>
 

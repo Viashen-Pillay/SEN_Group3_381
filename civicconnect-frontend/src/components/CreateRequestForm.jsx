@@ -109,7 +109,7 @@ export function CreateRequestForm({onRequestCreated,requesterId}) {
 
       // Use the actual database-generated request ID.
       setSuccess(
-        `Request #${savedRequest.request_id} saved successfully!`
+        `Request saved successfully!`
       );
 
       onRequestCreated?.(savedRequest);

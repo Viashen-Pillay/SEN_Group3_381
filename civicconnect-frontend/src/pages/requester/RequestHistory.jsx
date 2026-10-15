@@ -89,7 +89,6 @@ export default function RequestHistory({ requests = [], categories = [] }) {
         <table className="history-table">
           <thead>
             <tr>
-              <th>Request ID</th>
               <th>Title</th>
               <th>Category</th>
               <th>Status</th>
@@ -100,7 +99,6 @@ export default function RequestHistory({ requests = [], categories = [] }) {
           <tbody>
             {filteredRequests.map((request) => (
               <tr key={request.request_id}>
-                <td>{request.request_id}</td>
                 <td>{request.title}</td>
                 <td>{getCategoryName(request.category_id)}</td>
                 <td>{request.status}</td>
@@ -125,13 +123,10 @@ export default function RequestHistory({ requests = [], categories = [] }) {
       {selectedRequest && (
         <section className="request-details">
           <div className="details-heading">
-            <h3>Request {selectedRequest.request_id}</h3>
+            <h3>{selectedRequest.title}</h3>
             <button onClick={() => setSelectedRequest(null)}>Close</button>
           </div>
 
-          <p>
-            <strong>Title:</strong> {selectedRequest.title}
-          </p>
           <p>
             <strong>Category:</strong> {" "}{getCategoryName(selectedRequest.category_id)}
           </p>
