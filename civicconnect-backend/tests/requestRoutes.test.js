@@ -2,30 +2,132 @@ const request = require('supertest');
 const app = require('../src/index');
 
 jest.mock('../src/config/database', () => {
-    const mClient = {
+    const mockStaff = [
+        { user_id: 2, role: 'STAFF', is_active: true },
+        { user_id: 3, role: 'STAFF', is_active: true }
+    ];
+
+    const mockClient = {
         query: jest.fn((query, values) => {
             if (query.includes('SELECT status FROM service_requests')) {
-                if (values[0] == 999) return Promise.resolve({ rows: [] }); 
-                return Promise.resolve({ rows: [{ status: 'NEW' }] }); 
+                if (values[0] == 999) {
+                    return Promise.resolve({ rows: [] });
+                }
+
+                return Promise.resolve({
+                    rows: [{ status: 'NEW' }]
+                });
             }
-            return Promise.resolve({ rows: [{ request_id: 1, status: 'NEW', title: 'Pothole' }] });
+
+            // Updated staff assignment: fetch and lock request.
+            if (query.includes('SELECT assigned_staff_id, status')) {
+                if (values[0] == 999) {
+                    return Promise.resolve({ rows: [] });
+                }
+
+                return Promise.resolve({
+                    rows: [{
+                        assigned_staff_id: null,
+                        status: 'NEW'
+                    }]
+                });
+            }
+
+            // Validate the two staff members.
+            if (query.includes('FROM users')) {
+                return Promise.resolve({
+                    rows: mockStaff
+                });
+            }
+
+            // Return the newly created assignment history record.
+            if (query.includes('INSERT INTO assignment_history')) {
+                return Promise.resolve({
+                    rows: [{
+                        assignment_history_id: 1,
+                        request_id: 1,
+                        previous_staff_id: null,
+                        new_staff_id: 3,
+                        changed_by: 2
+                    }]
+                });
+            }
+
+            return Promise.resolve({
+                rows: [{
+                    request_id: 1,
+                    status: 'NEW',
+                    title: 'Pothole'
+                }]
+            });
         }),
-        release: jest.fn(),
+
+        release: jest.fn()
     };
+
     return {
         query: jest.fn((query, values) => {
 
-            if (query.includes('SELECT * FROM request_comments')) {
-                return Promise.resolve({ rows: [{ comment_id: 1, comment_text: 'Fixing tomorrow' }] });
+            // Validate comment author.
+            if (
+                query.includes('FROM users') &&
+                query.includes("role = 'STAFF'")
+            ) {
+                return Promise.resolve({
+                    rows: [{ user_id: 2 }]
+                });
             }
-      
+
+            // Verify the request exists.
+            if (
+                query.includes('FROM service_requests') &&
+                query.includes('WHERE request_id')
+            ) {
+                return Promise.resolve({
+                    rows: [{ request_id: 1 }]
+                });
+            }
+
+            // Create comment.
             if (query.includes('INSERT INTO request_comments')) {
-                return Promise.resolve({ rows: [{ comment_id: 1 }] });
+                return Promise.resolve({
+                    rows: [{
+                        comment_id: 1,
+                        request_id: 1,
+                        author_id: 2,
+                        content: 'We will dispatch a team tomorrow.',
+                        created_at: new Date().toISOString()
+                    }]
+                });
             }
-            
-            return Promise.resolve({ rows: [{ request_id: 1, status: 'NEW', title: 'Pothole' }] });
+
+            // Retrieve comments using the new schema.
+            if (
+                query.includes('FROM request_comments')
+            ) {
+                return Promise.resolve({
+                    rows: [{
+                        comment_id: 1,
+                        request_id: 1,
+                        author_id: 2,
+                        content: 'Fixing tomorrow',
+                        first_name: 'Test',
+                        last_name: 'Staff',
+                        created_at: new Date().toISOString()
+                    }]
+                });
+            }
+
+            return Promise.resolve({
+                rows: [{
+                    request_id: 1,
+                    status: 'NEW',
+                    title: 'Pothole'
+                }]
+            });
         }),
-        connect: jest.fn().mockResolvedValue(mClient)
+
+        connect: jest.fn().mockResolvedValue(mockClient)
     };
 });
 
@@ -83,7 +185,7 @@ describe('Service Requests API Integration', () => {
             .send({ userId: 2, commentText: "We will dispatch a team tomorrow." });
         
         expect(response.status).toBe(201);
-        expect(response.body.message).toBe("Comment added successfully");
+        expect(response.body.message).toBe("Comment added successfully.");
     });
 
     it('should retrieve comments for a ticket (Positive Test)', async () => {
@@ -91,6 +193,6 @@ describe('Service Requests API Integration', () => {
         
         expect(response.status).toBe(200);
         expect(response.body.comments).toBeInstanceOf(Array);
-        expect(response.body.comments[0].comment_text).toBe('Fixing tomorrow');
+        expect(response.body.comments[0].content).toBe('Fixing tomorrow');
     });
 });

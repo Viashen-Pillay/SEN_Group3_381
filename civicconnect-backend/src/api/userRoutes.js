@@ -76,4 +76,30 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.get('/staff', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                user_id,
+                first_name,
+                last_name
+            FROM users
+            WHERE role = 'STAFF'
+              AND is_active = TRUE
+            ORDER BY first_name, last_name
+        `);
+
+        res.status(200).json({
+            staff: result.rows
+        });
+
+    } catch (err) {
+        console.error("Staff retrieval error:", err);
+
+        res.status(500).json({
+            error: "Unable to fetch staff members."
+        });
+    }
+});
+
 module.exports = router;
