@@ -54,37 +54,37 @@ function App() {
   }, [currentUser]);
 
   useEffect(() => {
-  if (!currentUser) return;
+    if (!currentUser) return;
 
-  let active = true;
+    let active = true;
 
-  async function loadCategories() {
-    try {
-      const data = await getCategories();
+    async function loadCategories() {
+      try {
+        const data = await getCategories();
 
-      if (active) {
-        setCategories(data);
+        if (active) {
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error("Failed to load categories:", error);
       }
-    } catch (error) {
-      console.error("Failed to load categories:", error);
     }
-  }
 
-  loadCategories();
+    loadCategories();
 
-  return () => {
-    active = false;
-  };
-}, [currentUser]);
+    return () => {
+      active = false;
+    };
+  }, [currentUser]);
 
-  const handleRequestCreated = async() => {
+  const handleRequestCreated = async () => {
     try {
-    const updatedRequests = await getRequests();
-    setRequests(updatedRequests);
-    setRequestsError("");
-  } catch (err) {
-    setRequestsError(err.message);
-  }
+      const updatedRequests = await getRequests();
+      setRequests(updatedRequests);
+      setRequestsError("");
+    } catch (err) {
+      setRequestsError(err.message);
+    }
   };
 
   const handleStatusChange = (requestId, newStatus) => {
@@ -115,12 +115,27 @@ function App() {
     setCurrentUser(null);
     setRole("requester");
     setActivePage("dashboard");
+    setRequests([]);
+    setRequestsError("");
+    setCategories([]);
   };
+
+  const visibleRequests =
+    role === "requester"
+      ? requests.filter(
+          (request) =>
+            Number(request.requester_id) === Number(currentUser?.user_id),
+        )
+      : requests;
 
   const renderPage = () => {
     if (activePage === "dashboard" && role === "management") {
       return (
-        <ManagementDashboard requests={requests} categories={categories} onNavigate={setActivePage} />
+        <ManagementDashboard
+          requests={requests}
+          categories={categories}
+          onNavigate={setActivePage}
+        />
       );
     }
 
@@ -129,11 +144,19 @@ function App() {
     }
     if (activePage === "dashboard" && role === "requester") {
       return (
-        <RequesterDashboard requests={requests} onNavigate={setActivePage} />
+        <RequesterDashboard
+          requests={visibleRequests}
+          onNavigate={setActivePage}
+        />
       );
     }
     if (activePage === "new-request" && role === "requester") {
-      return <CreateRequestForm requesterId={currentUser.user_id} onRequestCreated={handleRequestCreated} />;
+      return (
+        <CreateRequestForm
+          requesterId={currentUser.user_id}
+          onRequestCreated={handleRequestCreated}
+        />
+      );
     }
 
     if (activePage === "staff-queue" && role === "staff") {
@@ -156,7 +179,9 @@ function App() {
     }
 
     if (activePage === "my-requests" && role === "requester") {
-      return <RequestHistory requests={requests} categories={categories} />;
+      return (
+        <RequestHistory requests={visibleRequests} categories={categories} />
+      );
     }
 
     if (activePage === "reports" && role === "management") {
