@@ -117,3 +117,42 @@ export async function getCategories() {
 
   return data.categories;
 }
+
+export async function updateRequestStatus(requestId,newStatus,changedBy) {
+  const statusMap = {
+    NEW: "Pending",
+    IN_PROGRESS: "In Progress",
+    RESOLVED: "Resolved",
+    CLOSED: "Closed"
+  };
+
+  const response = await fetch(
+    `${API_URL}/requests/${requestId}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        newStatus: statusMap[newStatus],
+        changedBy
+      })
+    }
+  );
+
+  return readApiResponse(response);
+}
+
+export async function getAssignedStaff(requestId) {
+  const response = await fetch(
+    `${API_URL}/requests/${requestId}/assigned-staff`,
+    {
+      credentials: "include"
+    }
+  );
+
+  const data = await readApiResponse(response);
+
+  return data.assignedStaff;
+}

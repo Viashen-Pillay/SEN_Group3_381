@@ -10,6 +10,7 @@ import {
 } from "../constants/requestStatuses";
 import StaffAssignment from "./StaffAssignment";
 import StaffComments from "./StaffComments";
+import { updateRequestStatus } from "../services/requestService";
 import "../styles/staffQueue.css";
 
 export function StaffQueueTable({
@@ -24,6 +25,7 @@ export function StaffQueueTable({
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [newStatus, setNewStatus] = useState("");
   const [message, setMessage] = useState("");
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
 
   const selectedRequest = requests.find(
     (request) => request.request_id === selectedRequestId,
@@ -55,8 +57,10 @@ export function StaffQueueTable({
     setMessage("");
   };
 
-  const handleStatusUpdate = () => {
-    if (!selectedRequest || !newStatus) return;
+  const handleStatusUpdate = async () => {
+    if (!selectedRequest || !newStatus || isSavingStatus) {
+      return;
+    }
 
     const allowed = ALLOWED_TRANSITIONS[selectedRequest.status] || [];
 
@@ -65,9 +69,29 @@ export function StaffQueueTable({
       return;
     }
 
-    onStatusChange(selectedRequest.request_id, newStatus);
-    setNewStatus("");
-    setMessage("Status updated in demo mode.");
+    const staffId = currentUser?.user_id;
+
+    if (!staffId) {
+      setMessage("Unable to identify the logged-in staff member.");
+      return;
+    }
+
+    setIsSavingStatus(true);
+    setMessage("");
+
+    try {
+      await updateRequestStatus(selectedRequest.request_id, newStatus, staffId);
+
+      // Refresh the list after the database confirms the update.
+      await onStatusChange(selectedRequest.request_id, newStatus);
+
+      setNewStatus("");
+      setMessage("Status updated successfully.");
+    } catch (error) {
+      setMessage(error.message || "Unable to update request status.");
+    } finally {
+      setIsSavingStatus(false);
+    }
   };
 
   return (
@@ -93,7 +117,10 @@ export function StaffQueueTable({
         >
           <option value="ALL">All Categories</option>
           {filterCategories.map((category) => (
-            <option key={category.category_id} value={String(category.category_id)}>
+            <option
+              key={category.category_id}
+              value={String(category.category_id)}
+            >
               {category.category_name}
             </option>
           ))}
@@ -154,7 +181,7 @@ export function StaffQueueTable({
         <section className="staff-request-details">
           <div className="staff-details-heading">
             <h3>Request #{selectedRequest.request_id}</h3>
-            <button onClick={() => setSelectedRequestId(null)}>
+            <button className="close-details" onClick={() => setSelectedRequestId(null)}>
               Close Details
             </button>
           </div>
@@ -163,7 +190,8 @@ export function StaffQueueTable({
             <strong>Title:</strong> {selectedRequest.title}
           </p>
           <p>
-            <strong>Category:</strong>{" "} {getCategoryName(selectedRequest.category_id)}
+            <strong>Category:</strong>{" "}
+            {getCategoryName(selectedRequest.category_id)}
           </p>
           <p>
             <strong>Status:</strong> {selectedRequest.status}
@@ -208,10 +236,10 @@ export function StaffQueueTable({
 
             <button
               className="primary-button"
-              disabled={!newStatus}
+              disabled={!newStatus || isSavingStatus}
               onClick={handleStatusUpdate}
             >
-              Save Status
+              {isSavingStatus ? "Saving..." : "Save Status"}
             </button>
           </div>
 

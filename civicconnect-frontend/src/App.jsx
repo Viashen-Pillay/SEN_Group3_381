@@ -87,14 +87,10 @@ function App() {
     }
   };
 
-  const handleStatusChange = (requestId, newStatus) => {
-    setRequests((previous) =>
-      previous.map((request) =>
-        request.request_id === requestId
-          ? { ...request, status: newStatus }
-          : request,
-      ),
-    );
+  const handleStatusChange = async () => {
+    const updatedRequests = await getRequests();
+    setRequests(updatedRequests);
+    setRequestsError("");
   };
 
   const handleLogin = async (credentials) => {
