@@ -1,50 +1,81 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {createRequest,getCategories} from "../services/requestService";
 import "../styles/requestForm.css";
 
-const categories = [
-  { category_id: 1, name: "Facility Faults" },
-  { category_id: 2, name: "IT Support" },
-  { category_id: 3, name: "Maintenance" },
-  { category_id: 4, name: "Security Concerns" }
-];
-
-export function CreateRequestForm({ onRequestCreated }) {
+export function CreateRequestForm({onRequestCreated,requesterId}) {
   const [formData, setFormData] = useState({
     category_id: "",
     title: "",
     description: ""
   });
 
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCategories() {
+      try {
+        const data = await getCategories();
+
+        if (active) {
+          setCategories(
+            data.filter(category => category.is_active)
+          );
+        }
+      } catch (err) {
+        if (active) {
+          setErrors(previous => ({
+            ...previous,
+            category_id: err.message
+          }));
+        }
+      } finally {
+        if (active) setCategoriesLoading(false);
+      }
+    }
+
+    loadCategories();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
 
-    setFormData((previous) => ({
+    setFormData(previous => ({
       ...previous,
       [name]: value
     }));
 
-    setErrors((previous) => ({
+    setErrors(previous => ({
       ...previous,
-      [name]: ""
+      [name]: "",
+      submit: ""
     }));
 
     setSuccess("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const validationErrors = {};
 
     if (!formData.category_id) {
-      validationErrors.category_id = "Please select a category.";
+      validationErrors.category_id =
+        "Please select a category.";
     }
 
     if (!formData.title.trim()) {
-      validationErrors.title = "Please enter a request title.";
+      validationErrors.title =
+        "Please enter a request title.";
     }
 
     if (formData.description.trim().length < 10) {
@@ -52,29 +83,50 @@ export function CreateRequestForm({ onRequestCreated }) {
         "Description must contain at least 10 characters.";
     }
 
+    if (!requesterId) {
+      validationErrors.submit =
+        "You must be logged in to submit a request.";
+    }
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
-    const newRequest = {
-      request_id: `mock-${crypto.randomUUID()}`,
-      category_id: Number(formData.category_id),
-      title: formData.title.trim(),
-      description: formData.description.trim(),
-      status: "NEW"
-    };
-
-    onRequestCreated(newRequest);
-
-    setFormData({
-      category_id: "",
-      title: "",
-      description: ""
-    });
-
+    setIsSubmitting(true);
     setErrors({});
-    setSuccess("Request created in demo mode. It has not been saved to the database.");
+    setSuccess("");
+
+    try {
+      const savedRequest = await createRequest(
+        {
+          category_id: formData.category_id,
+          title: formData.title.trim(),
+          description: formData.description.trim()
+        },
+        requesterId
+      );
+
+      // Use the actual database-generated request ID.
+      setSuccess(
+        `Request #${savedRequest.request_id} saved successfully!`
+      );
+
+      onRequestCreated?.(savedRequest);
+
+      setFormData({
+        category_id: "",
+        title: "",
+        description: ""
+      });
+    } catch (err) {
+      setErrors({
+        submit: err.message ||
+          "Unable to save request. Please try again."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -91,35 +143,52 @@ export function CreateRequestForm({ onRequestCreated }) {
           </div>
         )}
 
+        {errors.submit && (
+          <div className="form-error" role="alert">
+            {errors.submit}
+          </div>
+        )}
+
         <div className="form-group">
-          <label htmlFor="category_id">Category *</label>
+          <label htmlFor="category_id">
+            Category *
+          </label>
 
           <select
             id="category_id"
             name="category_id"
             value={formData.category_id}
             onChange={handleChange}
+            disabled={categoriesLoading || isSubmitting}
             aria-invalid={Boolean(errors.category_id)}
           >
-            <option value="">Select a category</option>
+            <option value="">
+              {categoriesLoading
+                ? "Loading categories..."
+                : "Select a category"}
+            </option>
 
-            {categories.map((category) => (
+            {categories.map(category => (
               <option
                 key={category.category_id}
                 value={category.category_id}
               >
-                {category.name}
+                {category.category_name}
               </option>
             ))}
           </select>
 
           {errors.category_id && (
-            <span className="form-error">{errors.category_id}</span>
+            <span className="form-error">
+              {errors.category_id}
+            </span>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="title">Request Title *</label>
+          <label htmlFor="title">
+            Request Title *
+          </label>
 
           <input
             id="title"
@@ -129,16 +198,21 @@ export function CreateRequestForm({ onRequestCreated }) {
             onChange={handleChange}
             placeholder="e.g. Broken air conditioner"
             maxLength={150}
+            disabled={isSubmitting}
             aria-invalid={Boolean(errors.title)}
           />
 
           {errors.title && (
-            <span className="form-error">{errors.title}</span>
+            <span className="form-error">
+              {errors.title}
+            </span>
           )}
         </div>
 
         <div className="form-group">
-          <label htmlFor="description">Description *</label>
+          <label htmlFor="description">
+            Description *
+          </label>
 
           <textarea
             id="description"
@@ -147,16 +221,25 @@ export function CreateRequestForm({ onRequestCreated }) {
             value={formData.description}
             onChange={handleChange}
             placeholder="Provide details about the issue..."
+            disabled={isSubmitting}
             aria-invalid={Boolean(errors.description)}
           />
 
           {errors.description && (
-            <span className="form-error">{errors.description}</span>
+            <span className="form-error">
+              {errors.description}
+            </span>
           )}
         </div>
 
-        <button className="primary-button" type="submit">
-          Submit Request
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={isSubmitting || categoriesLoading}
+        >
+          {isSubmitting
+            ? "Saving Request..."
+            : "Submit Request"}
         </button>
       </form>
     </div>

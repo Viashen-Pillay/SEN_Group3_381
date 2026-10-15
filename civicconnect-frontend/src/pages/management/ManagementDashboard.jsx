@@ -2,7 +2,7 @@ import "../../styles/managementDashboard.css";
 
 const STATUSES = ["NEW", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 
-export default function ManagementDashboard({ requests = [], onNavigate }) {
+export default function ManagementDashboard({ requests = [], categories = [], onNavigate }) {
   const total = requests.length;
 
   const statusCounts = STATUSES.map((status) => ({
@@ -17,6 +17,14 @@ export default function ManagementDashboard({ requests = [], onNavigate }) {
       return counts;
     }, {}),
   );
+
+  const getCategoryName = (categoryId) => {
+  const category = categories.find(
+    (item) => Number(item.category_id) === Number(categoryId)
+  );
+
+  return category?.category_name ?? "Unknown category";
+};
 
   return (
     <div className="management-dashboard">
@@ -85,7 +93,7 @@ export default function ManagementDashboard({ requests = [], onNavigate }) {
           <table className="management-table">
             <thead>
               <tr>
-                <th>Category ID</th>
+                <th>Category</th>
                 <th>Number of Requests</th>
               </tr>
             </thead>
@@ -93,7 +101,7 @@ export default function ManagementDashboard({ requests = [], onNavigate }) {
             <tbody>
               {categoryCounts.map(([categoryId, count]) => (
                 <tr key={categoryId}>
-                  <td>Category {categoryId}</td>
+                  <td>{getCategoryName(categoryId)}</td>
                   <td>{count}</td>
                 </tr>
               ))}

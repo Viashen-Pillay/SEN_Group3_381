@@ -10,6 +10,7 @@ import ManagementReports from "./pages/management/ManagementReports";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import { getRequests } from "./services/requestService";
+import { getCategories } from "./services/requestService";
 
 import { registerUser, loginUser } from "./services/authService";
 import "./styles/layout.css";
@@ -24,6 +25,7 @@ function App() {
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState("");
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -51,8 +53,38 @@ function App() {
     };
   }, [currentUser]);
 
-  const handleRequestCreated = (newRequest) => {
-    setRequests((prev) => [...prev, newRequest]);
+  useEffect(() => {
+  if (!currentUser) return;
+
+  let active = true;
+
+  async function loadCategories() {
+    try {
+      const data = await getCategories();
+
+      if (active) {
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Failed to load categories:", error);
+    }
+  }
+
+  loadCategories();
+
+  return () => {
+    active = false;
+  };
+}, [currentUser]);
+
+  const handleRequestCreated = async() => {
+    try {
+    const updatedRequests = await getRequests();
+    setRequests(updatedRequests);
+    setRequestsError("");
+  } catch (err) {
+    setRequestsError(err.message);
+  }
   };
 
   const handleStatusChange = (requestId, newStatus) => {
@@ -88,7 +120,7 @@ function App() {
   const renderPage = () => {
     if (activePage === "dashboard" && role === "management") {
       return (
-        <ManagementDashboard requests={requests} onNavigate={setActivePage} />
+        <ManagementDashboard requests={requests} categories={categories} onNavigate={setActivePage} />
       );
     }
 
@@ -101,7 +133,7 @@ function App() {
       );
     }
     if (activePage === "new-request" && role === "requester") {
-      return <CreateRequestForm onRequestCreated={handleRequestCreated} />;
+      return <CreateRequestForm requesterId={currentUser.user_id} onRequestCreated={handleRequestCreated} />;
     }
 
     if (activePage === "staff-queue" && role === "staff") {
@@ -116,6 +148,7 @@ function App() {
       return (
         <StaffQueueTable
           requests={requests}
+          categories={categories}
           onStatusChange={handleStatusChange}
           currentUser={currentUser}
         />
@@ -123,7 +156,7 @@ function App() {
     }
 
     if (activePage === "my-requests" && role === "requester") {
-      return <RequestHistory requests={requests} />;
+      return <RequestHistory requests={requests} categories={categories} />;
     }
 
     if (activePage === "reports" && role === "management") {

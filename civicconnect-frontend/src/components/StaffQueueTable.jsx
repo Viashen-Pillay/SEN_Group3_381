@@ -1,11 +1,23 @@
 import { useState } from "react";
-import {CategoryFilterStrategy,StatusFilterStrategy,KeywordSearchStrategy} from "../strategies/filterStrategies";
-import {REQUEST_STATUSES,ALLOWED_TRANSITIONS} from "../constants/requestStatuses";
+import {
+  CategoryFilterStrategy,
+  StatusFilterStrategy,
+  KeywordSearchStrategy,
+} from "../strategies/filterStrategies";
+import {
+  REQUEST_STATUSES,
+  ALLOWED_TRANSITIONS,
+} from "../constants/requestStatuses";
 import StaffAssignment from "./StaffAssignment";
 import StaffComments from "./StaffComments";
 import "../styles/staffQueue.css";
 
-export function StaffQueueTable({requests = [],onStatusChange, currentUser}) {
+export function StaffQueueTable({
+  requests = [],
+  onStatusChange,
+  currentUser,
+  categories = [],
+}) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -14,14 +26,28 @@ export function StaffQueueTable({requests = [],onStatusChange, currentUser}) {
   const [message, setMessage] = useState("");
 
   const selectedRequest = requests.find(
-    (request) => request.request_id === selectedRequestId
+    (request) => request.request_id === selectedRequestId,
   );
+
+  const getCategoryName = (categoryId) => {
+    const category = categories.find(
+      (item) => Number(item.category_id) === Number(categoryId),
+    );
+
+    return category?.category_name ?? "Unknown category";
+  };
 
   let filtered = CategoryFilterStrategy.filter(requests, selectedCategory);
   filtered = StatusFilterStrategy.filter(filtered, selectedStatus);
   filtered = KeywordSearchStrategy.filter(filtered, searchKeyword);
 
-  const categories = [...new Set(requests.map((request) => request.category_id))];
+  const availableCategoryIds = new Set(
+    requests.map((request) => Number(request.category_id)),
+  );
+
+  const filterCategories = categories.filter((category) =>
+    availableCategoryIds.has(Number(category.category_id)),
+  );
 
   const openDetails = (request) => {
     setSelectedRequestId(request.request_id);
@@ -66,9 +92,9 @@ export function StaffQueueTable({requests = [],onStatusChange, currentUser}) {
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
           <option value="ALL">All Categories</option>
-          {categories.map((categoryId) => (
-            <option key={categoryId} value={String(categoryId)}>
-              Category {categoryId}
+          {filterCategories.map((category) => (
+            <option key={category.category_id} value={String(category.category_id)}>
+              {category.category_name}
             </option>
           ))}
         </select>
@@ -104,7 +130,7 @@ export function StaffQueueTable({requests = [],onStatusChange, currentUser}) {
               <tr key={request.request_id}>
                 <td>#{request.request_id}</td>
                 <td>{request.title}</td>
-                <td>{request.category_id}</td>
+                <td>{getCategoryName(request.category_id)}</td>
                 <td>{request.status}</td>
                 <td>
                   <button
@@ -133,17 +159,31 @@ export function StaffQueueTable({requests = [],onStatusChange, currentUser}) {
             </button>
           </div>
 
-          <p><strong>Title:</strong> {selectedRequest.title}</p>
-          <p><strong>Category:</strong> {selectedRequest.category_id}</p>
-          <p><strong>Status:</strong> {selectedRequest.status}</p>
-          <p><strong>Description:</strong></p>
+          <p>
+            <strong>Title:</strong> {selectedRequest.title}
+          </p>
+          <p>
+            <strong>Category:</strong>{" "} {getCategoryName(selectedRequest.category_id)}
+          </p>
+          <p>
+            <strong>Status:</strong> {selectedRequest.status}
+          </p>
+          <p>
+            <strong>Description:</strong>
+          </p>
           <p>{selectedRequest.description}</p>
 
-          <StaffAssignment key={'assignment-${selectedRequest.request_id}'} 
-          requestId={selectedRequest.request_id} currentUser={currentUser}/>
+          <StaffAssignment
+            key={"assignment-${selectedRequest.request_id}"}
+            requestId={selectedRequest.request_id}
+            currentUser={currentUser}
+          />
 
-          <StaffComments key={'comments-${selectedRequest.request_id}'}
-           requestId={selectedRequest.request_id} currentUser={currentUser}/>
+          <StaffComments
+            key={"comments-${selectedRequest.request_id}"}
+            requestId={selectedRequest.request_id}
+            currentUser={currentUser}
+          />
           <div className="staff-status-editor">
             <label htmlFor="new-status">Update Status</label>
 
@@ -157,12 +197,13 @@ export function StaffQueueTable({requests = [],onStatusChange, currentUser}) {
             >
               <option value="">Select new status</option>
 
-              {(ALLOWED_TRANSITIONS[selectedRequest.status] || [])
-                .map((status) => (
+              {(ALLOWED_TRANSITIONS[selectedRequest.status] || []).map(
+                (status) => (
                   <option key={status} value={status}>
                     {status}
                   </option>
-                ))}
+                ),
+              )}
             </select>
 
             <button
