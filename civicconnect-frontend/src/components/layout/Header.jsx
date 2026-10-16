@@ -19,7 +19,7 @@ export default function Header({ role, user, onLogout }) {
         <div className="user-avatar">
           {displayName.charAt(0).toUpperCase()}
         </div>
-        <button type="button" onClick={onLogout}>
+        <button className = "logout-button" type="button" onClick={onLogout}>
           Log Out
         </button>
       </div>

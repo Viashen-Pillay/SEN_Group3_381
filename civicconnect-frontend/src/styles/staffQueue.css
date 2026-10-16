@@ -176,3 +176,16 @@
   align-items: flex-start;
   gap: 12px;
 }
+
+.close-details {
+  background: hsl(214, 100%, 97%);
+  color: black;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.close-details:hover {
+  background: hsl(214, 95%, 93%);
+}

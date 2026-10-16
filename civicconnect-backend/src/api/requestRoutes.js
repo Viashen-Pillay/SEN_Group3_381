@@ -400,4 +400,55 @@ router.get('/:id/assignments', async (req, res) => {
     }
 });
 
+router.get("/:id/assigned-staff", async (req, res) => {
+  const requestId = Number(req.params.id);
+
+  if (!Number.isSafeInteger(requestId) || requestId <= 0) {
+    return res.status(400).json({
+      error: "Invalid request ID."
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        sr.request_id,
+        sr.assigned_staff_id,
+        u.first_name,
+        u.last_name
+      FROM service_requests sr
+      LEFT JOIN users u
+        ON sr.assigned_staff_id = u.user_id
+      WHERE sr.request_id = $1
+      `,
+      [requestId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Service request not found."
+      });
+    }
+
+    const row = result.rows[0];
+
+    res.status(200).json({
+      assignedStaff: row.assigned_staff_id
+        ? {
+            user_id: row.assigned_staff_id,
+            first_name: row.first_name,
+            last_name: row.last_name
+          }
+        : null
+    });
+  } catch (error) {
+    console.error("Assigned staff retrieval error:", error);
+
+    res.status(500).json({
+      error: "Unable to retrieve assigned staff member."
+    });
+  }
+});
+
 module.exports = router;

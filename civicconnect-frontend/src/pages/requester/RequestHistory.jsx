@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "../../styles/requestHistory.css";
+import RequesterRequestUpdates from "../../components/RequesterRequestUpdates";
 
 const STATUSES = ["NEW", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 
@@ -124,7 +125,7 @@ export default function RequestHistory({ requests = [], categories = [] }) {
         <section className="request-details">
           <div className="details-heading">
             <h3>{selectedRequest.title}</h3>
-            <button onClick={() => setSelectedRequest(null)}>Close</button>
+            <button className="close-button"onClick={() => setSelectedRequest(null)}>Close</button>
           </div>
 
           <p>
@@ -137,6 +138,7 @@ export default function RequestHistory({ requests = [], categories = [] }) {
             <strong>Description:</strong>
           </p>
           <p>{selectedRequest.description}</p>
+          <RequesterRequestUpdates key={selectedRequest.request_id} requestId={selectedRequest.request_id}/>
         </section>
       )}
     </div>
